@@ -1,0 +1,47 @@
+name: Validate and Deploy Bicep to Azure
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Azure Login via OIDC
+      uses: azure/login@v1
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Validate Bicep file
+      uses: azure/cli@v1
+      with:
+        inlineScript: |
+          az deployment group validate \
+            --resource-group <your-resource-group-name> \
+            --template-file ./all-in-one.bicep \
+            --parameters environment=prod
+
+    - name: Deploy Bicep to Resource Group
+      if: success()
+      uses: azure/cli@v1
+      with:
+        inlineScript: |
+          az deployment group create \
+            --resource-group <your-resource-group-name> \
+            --template-file ./all-in-one.bicep \
+            --parameters environment=prod
