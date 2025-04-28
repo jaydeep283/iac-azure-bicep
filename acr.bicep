@@ -22,6 +22,5 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-prev
   }
 }
 
-
 output acrId string = acr.id
 output acrLoginServer string = acr.properties.loginServer

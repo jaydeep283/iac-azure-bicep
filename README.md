@@ -19,13 +19,13 @@ This project uses Bicep, a domain-specific language (DSL) for deploying Azure re
 
 ### Key Features:
 
--   **Virtual Network (VNet)** with public and private subnets.
+-   **Virtual Network (VNet)** with public, private, and PostgreSQL subnets.
 -   **Application Gateway** with Web Application Firewall (WAF) enabled.
 -   **AKS Cluster** integrated with Application Gateway Ingress Controller (AGIC).
 -   **Azure Container Registry (ACR)** for container image storage.
 -   **Azure Key Vault** for secure secret management.
--   **PostgreSQL Flexible Server** with private endpoint.
--   **Network Security Groups (NSGs)** for securing subnets.
+-   **PostgreSQL Flexible Server** with private endpoint and DNS zone delegation.
+-   **Network Security Groups (NSGs)** for securing subnets with granular rules.
 
 ---
 
@@ -49,19 +49,22 @@ This project uses Bicep, a domain-specific language (DSL) for deploying Azure re
 
 ### 2. **[network.bicep](network.bicep)**
 
--   Creates a Virtual Network with public and private subnets.
+-   Creates a Virtual Network with public, private, and PostgreSQL subnets.
+-   Includes subnet delegation for PostgreSQL Flexible Server.
 
 ### 3. **[publicip.bicep](publicip.bicep)**
 
--   Provisions a static public IP address.
+-   Provisions a static public IP address for the Application Gateway.
 
 ### 4. **[appgateway.bicep](appgateway.bicep)**
 
 -   Deploys an Application Gateway with WAF enabled.
+-   Configures backend pools, HTTP settings, listeners, and routing rules.
 
 ### 5. **[aks.bicep](aks.bicep)**
 
 -   Deploys an AKS cluster with AGIC enabled.
+-   Configures private cluster access and assigns a role to the Application Gateway.
 
 ### 6. **[acr.bicep](acr.bicep)**
 
@@ -73,11 +76,12 @@ This project uses Bicep, a domain-specific language (DSL) for deploying Azure re
 
 ### 8. **[postgres.bicep](postgres.bicep)**
 
--   Provisions a PostgreSQL Flexible Server with a private endpoint.
+-   Provisions a PostgreSQL Flexible Server with private endpoint and DNS zone delegation.
 
 ### 9. **[nsg.bicep](nsg.bicep)**
 
--   Configures Network Security Groups for public and private subnets.
+-   Configures Network Security Groups for public, private, and PostgreSQL subnets.
+-   Includes rules for AKS, Application Gateway, and PostgreSQL communication.
 
 ---
 
@@ -105,6 +109,7 @@ The deployment generates the following outputs:
     -   `vnetId`: ID of the Virtual Network.
     -   `publicSubnetId`: ID of the public subnet.
     -   `privateSubnetId`: ID of the private subnet.
+    -   `postgresSubnetId`: ID of the PostgreSQL subnet.
 
 -   **Application Gateway**:
 

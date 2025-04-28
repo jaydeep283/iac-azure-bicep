@@ -23,8 +23,8 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2023-10-01' = {
       {
         name: 'defaultpool'
         osDiskSizeGB: 128
-        count: 3
-        vmSize: 'Standard_DS2_v2'
+        count: 1
+        vmSize: 'Standard_B2s'
         vnetSubnetID: privateSubnetId
         osType: 'Linux'
         mode: 'System'
@@ -33,6 +33,11 @@ resource aksCluster 'Microsoft.ContainerService/managedClusters@2023-10-01' = {
     networkProfile: {
       networkPlugin: 'azure'
       loadBalancerSku: 'Standard'
+      serviceCidr: '172.16.0.0/16'    // Non-overlapping CIDR for Kubernetes services
+      dnsServiceIP: '172.16.0.10'     // Must be within the service CIDR
+    }
+    apiServerAccessProfile: {
+      enablePrivateCluster: true
     }
     addonProfiles: {
       ingressApplicationGateway: {

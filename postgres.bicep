@@ -7,8 +7,31 @@ param skuName string = 'Standard_B1ms'
 param storageSizeGB int = 32
 param postgresVersion string = '15'
 param privateSubnetId string
-param vnetId string 
+param vnetId string
 
+// Create a Private DNS Zone for PostgreSQL
+resource privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' = {
+  name: 'privatelink.postgres.database.azure.com'
+  location: 'global'
+  tags: {
+    displayName: 'PostgreSQL Private DNS Zone'
+  }
+}
+
+// Link the Private DNS Zone to your VNet
+resource vnetLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = {
+  parent: privateDnsZone
+  name: 'link-to-vnet'
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: vnetId
+    }
+  }
+}
+
+// PostgreSQL Flexible Server with explicit DNS zone reference
 resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-preview' = {
   name: postgresServerName
   location: location
@@ -17,50 +40,25 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2023-06-01-pr
     tier: 'Burstable' 
   }
   properties: {
+    version: postgresVersion
     administratorLogin: administratorLogin
     administratorLoginPassword: administratorPassword
-    version: postgresVersion
     storage: {
       storageSizeGB: storageSizeGB
     }
+    highAvailability: {
+      mode: 'Disabled'
+    }
     network: {
       delegatedSubnetResourceId: privateSubnetId
-      privateDnsZoneArmId: '' 
+      privateDnsZoneArmResourceId: privateDnsZone.id
     }
   }
-}
-
-//Create a Private Endpoint for more secure access (recommended)
-resource postgresPrivateEndpoint 'Microsoft.Network/privateEndpoints@2023-04-01' = {
-  name: 'pe-${postgresServerName}'
-  location: location
-  properties: {
-    subnet: {
-      id: privateSubnetId
-    }
-    privateLinkServiceConnections: [
-      {
-        name: 'postgresConnection'
-        properties: {
-          privateLinkServiceId: postgresServer.id
-          groupIds: [
-            'postgresqlServer'
-          ]
-        }
-      }
-    ]
-  }
-}
-
-// Create Private DNS Zone Group to associate with the VNet
-resource privateDnsZoneGroup 'Microsoft.DBforPostgreSQL/flexibleServers/privateDnsZoneGroups@2023-06-01-preview' = {
-  parent: postgresServer
-  name: 'default'
-  properties: {
-    privateDnsZoneId: postgresServer.properties.network.privateDnsZoneArmId
-  }
+  dependsOn: [
+    privateDnsZone
+    vnetLink
+  ]
 }
 
 output postgresServerId string = postgresServer.id
 output postgresFullyQualifiedDomainName string = postgresServer.properties.fullyQualifiedDomainName
-output postgresPrivateEndpointId string = postgresPrivateEndpoint.id
